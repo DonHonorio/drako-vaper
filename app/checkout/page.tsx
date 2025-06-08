@@ -42,46 +42,17 @@ export default function CheckoutPage() {
     e.preventDefault()
     setIsProcessing(true)
 
-    try {
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          customerInfo: {
-            email: formData.email,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            address: formData.address,
-            city: formData.city,
-            postalCode: formData.postalCode,
-          },
-          items: state.items,
-          subtotal: state.total,
-          shippingCost: 4.99,
-          total: state.total + 4.99,
-        }),
-      })
+    // Simular procesamiento de pago
+    await new Promise((resolve) => setTimeout(resolve, 3000))
 
-      const result = await response.json()
+    setIsProcessing(false)
+    setOrderComplete(true)
 
-      if (result.success) {
-        setOrderComplete(true)
-        // Limpiar carrito después de 2 segundos
-        setTimeout(() => {
-          dispatch({ type: "CLEAR_CART" })
-          router.push("/")
-        }, 3000)
-      } else {
-        throw new Error(result.error || "Error al procesar el pedido")
-      }
-    } catch (error) {
-      console.error("Error processing order:", error)
-      alert("Error al procesar el pedido. Por favor, inténtalo de nuevo.")
-    } finally {
-      setIsProcessing(false)
-    }
+    // Limpiar carrito después de 2 segundos
+    setTimeout(() => {
+      dispatch({ type: "CLEAR_CART" })
+      router.push("/")
+    }, 2000)
   }
 
   if (state.items.length === 0 && !orderComplete) {
@@ -315,7 +286,7 @@ export default function CheckoutPage() {
                       <p className="text-white font-medium">{item.name}</p>
                       <p className="text-sm text-muted-foreground">Cantidad: {item.quantity}</p>
                     </div>
-                    <p className="text-white">€{(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="text-white">€{(Number(item.price) * item.quantity).toFixed(2)}</p>
                   </div>
                 ))}
               </div>

@@ -4,8 +4,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { useCart } from "@/lib/cart-context"
-import { Product } from "@/lib/types"
+import { useCart, type Product } from "@/lib/cart-context"
 import { ShoppingCart } from "lucide-react"
 
 interface ProductCardProps {
@@ -21,15 +20,14 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Card className="group overflow-hidden border-red-900/20 bg-card hover:border-primary/50 transition-all duration-300">
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden aspect-square">
         <Image
-          src={product.image || "/placeholder.svg"}
+          src={product.image_url || "/placeholder.svg?height=300&width=300"}
           alt={product.name}
-          width={300}
-          height={300}
-          className="aspect-square object-cover transition-transform duration-300 group-hover:scale-105"
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        <Badge className="absolute top-2 right-2 bg-accent text-black">{product.category}</Badge>
+        <Badge className="absolute top-2 right-2 bg-accent text-black">{product.category_name}</Badge>
       </div>
       <CardContent className="p-4">
         <h3 className="font-semibold text-lg mb-2 text-white">{product.name}</h3>

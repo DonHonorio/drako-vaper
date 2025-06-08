@@ -6,53 +6,55 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Loader2 } from "lucide-react"
-import type { Product, Category } from "@/lib/types"
+import type { Product } from "@/lib/types"
 
 export default function CatalogPage() {
   const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [sortBy, setSortBy] = useState("name")
+  const [categories, setCategories] = useState<string[]>([])
 
   useEffect(() => {
-    fetchCategories()
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("/api/products")
+        if (response.ok) {
+          const data = await response.json()
+          setProducts(data)
+
+          // Extraer categorías únicas
+          const uniqueCategories = Array.from(new Set(data.map((p: Product) => p.category_name)))
+          setCategories(["all", ...uniqueCategories])
+        }
+      } catch (error) {
+        console.error("Error al cargar productos:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProducts()
   }, [])
 
-  useEffect(() => {
-    fetchProducts()
-  }, [searchTerm, selectedCategory, sortBy])
-
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch("/api/categories")
-      const data = await response.json()
-      setCategories(data)
-    } catch (error) {
-      console.error("Error fetching categories:", error)
-    }
-  }
-
-  const fetchProducts = async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      if (searchTerm) params.append("search", searchTerm)
-      if (selectedCategory !== "all") params.append("category", selectedCategory)
-      if (sortBy) params.append("sortBy", sortBy)
-
-      const response = await fetch(`/api/products?${params}`)
-      const data = await response.json()
-      setProducts(data)
-
-      console.log("Fetched products:", data);
-    } catch (error) {
-      console.error("Error fetching products:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const filteredProducts = products
+    .filter(
+      (product) =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (selectedCategory === "all" || product.category_name === selectedCategory),
+    )
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "price-low":
+          return a.price - b.price
+        case "price-high":
+          return b.price - a.price
+        case "name":
+        default:
+          return a.name.localeCompare(b.name)
+      }
+    })
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -81,10 +83,9 @@ export default function CatalogPage() {
             <SelectValue placeholder="Categoría" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas las categorías</SelectItem>
             {categories.map((category) => (
-              <SelectItem key={category.id} value={category.name}>
-                {category.name}
+              <SelectItem key={category} value={category}>
+                {category === "all" ? "Todas las categorías" : category}
               </SelectItem>
             ))}
           </SelectContent>
@@ -101,34 +102,21 @@ export default function CatalogPage() {
         </Select>
       </div>
 
-      {/* Loading */}
-      {loading && (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-white">Cargando productos...</span>
-        </div>
-      )}
-
       {/* Grid de productos */}
-      {!loading && (
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <span className="ml-3 text-white text-lg">Cargando productos...</span>
+        </div>
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={{
-                id: product.id.toString(),
-                name: product.name,
-                price: product.price,
-                image: product.image_url,
-                description: product.description,
-                category: product.category_name || "Sin categoría",
-              }}
-            />
+          {filteredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       )}
 
-      {!loading && products.length === 0 && (
+      {!loading && filteredProducts.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground text-lg">No se encontraron productos que coincidan con tu búsqueda.</p>
           <Button

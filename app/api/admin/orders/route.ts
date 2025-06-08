@@ -13,8 +13,13 @@ export async function GET(request: NextRequest) {
 
     const query = "SELECT * FROM orders ORDER BY created_at DESC"
     const orders = await executeQuery(query)
-
-    return NextResponse.json(orders)
+    const transformedOrders = (orders as any[]).map((order) => ({
+      ...order,
+      subtotal: Number(order.subtotal),
+      shipping_cost: Number(order.shipping_cost),
+      total: Number(order.total),
+    }))
+    return NextResponse.json(transformedOrders)
   } catch (error) {
     console.error("Error al obtener pedidos:", error)
     return NextResponse.json({ error: "Error al obtener pedidos" }, { status: 500 })

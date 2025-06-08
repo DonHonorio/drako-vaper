@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useAdmin } from "@/lib/admin-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -124,7 +125,7 @@ export default function ProductsPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-secondary/50">
-                    <TableHead className="text-white">ID</TableHead>
+                    <TableHead className="text-white">Imagen</TableHead>
                     <TableHead className="text-white">Nombre</TableHead>
                     <TableHead className="text-white">Precio</TableHead>
                     <TableHead className="text-white">Categoría</TableHead>
@@ -143,9 +144,18 @@ export default function ProductsPage() {
                   ) : (
                     filteredProducts.map((product) => (
                       <TableRow key={product.id} className="hover:bg-secondary/50">
-                        <TableCell className="text-white">{product.id}</TableCell>
+                        <TableCell>
+                          <div className="relative w-12 h-12 rounded-md overflow-hidden">
+                            <Image
+                              src={product.image_url || "/placeholder.svg?height=300&width=300"}
+                              alt={product.name}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        </TableCell>
                         <TableCell className="text-white font-medium">{product.name}</TableCell>
-                        <TableCell className="text-white">€{Number(product.price).toFixed(2)}</TableCell>
+                        <TableCell className="text-white">€{product.price.toFixed(2)}</TableCell>
                         <TableCell className="text-white">{product.category_name}</TableCell>
                         <TableCell className="text-white">{product.stock_quantity}</TableCell>
                         <TableCell>

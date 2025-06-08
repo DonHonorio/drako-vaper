@@ -55,7 +55,7 @@ export default function CartPage() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-white">{item.name}</h3>
                     <p className="text-sm text-muted-foreground">{item.category}</p>
-                    <p className="text-lg font-bold text-primary">€{item.price.toFixed(2)}</p>
+                    <p className="text-lg font-bold text-primary">€{Number(item.price).toFixed(2)}</p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -102,7 +102,7 @@ export default function CartPage() {
                     <span className="text-muted-foreground">
                       {item.name} x{item.quantity}
                     </span>
-                    <span className="text-white">€{(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="text-white">€{(Number(item.price) * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>

@@ -22,7 +22,13 @@ export async function GET(request: NextRequest) {
     `
 
     const products = await executeQuery(query)
-    return NextResponse.json(products)
+    const transformedProducts = (products as any[]).map((product) => ({
+      ...product,
+      price: Number(product.price),
+      stock_quantity: Number(product.stock_quantity),
+      is_active: Boolean(product.is_active),
+    }))
+    return NextResponse.json(transformedProducts)
   } catch (error) {
     console.error("Error al obtener productos:", error)
     return NextResponse.json({ error: "Error al obtener productos" }, { status: 500 })

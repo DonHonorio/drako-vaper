@@ -3,11 +3,18 @@
 import type React from "react"
 import { createContext, useContext, useReducer, type ReactNode } from "react"
 
-// Actualizar las interfaces para usar los tipos de la base de datos
-import type { Product, CartItem } from "./types"
+export interface Product {
+  id: string
+  name: string
+  price: number
+  image: string
+  description: string
+  category: string
+}
 
-// Cambiar la interfaz Product por la importada
-// Cambiar CartItem para que extienda de la interfacez de types.ts
+export interface CartItem extends Product {
+  quantity: number
+}
 
 interface CartState {
   items: CartItem[]
@@ -36,13 +43,13 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         )
         return {
           items: updatedItems,
-          total: updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+          total: updatedItems.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0),
         }
       } else {
         const newItems = [...state.items, { ...action.payload, quantity: 1 }]
         return {
           items: newItems,
-          total: newItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+          total: newItems.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0),
         }
       }
     }

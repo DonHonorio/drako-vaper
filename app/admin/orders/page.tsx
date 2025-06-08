@@ -192,7 +192,7 @@ export default function OrdersPage() {
                           {order.customer_first_name} {order.customer_last_name}
                         </TableCell>
                         <TableCell className="text-white">{order.customer_email}</TableCell>
-                        <TableCell className="text-white">€{order.total.toFixed(2)}</TableCell>
+                        <TableCell className="text-white">€{Number(order.total).toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge className={statusColors[order.status]}>{statusLabels[order.status]}</Badge>
                         </TableCell>
@@ -278,10 +278,10 @@ export default function OrdersPage() {
                       <div>
                         <p className="text-white font-medium">{item.product_name}</p>
                         <p className="text-sm text-muted-foreground">
-                          Cantidad: {item.quantity} × €{item.product_price.toFixed(2)}
+                          Cantidad: {item.quantity} × €{Number(item.product_price).toFixed(2)}
                         </p>
                       </div>
-                      <p className="text-white font-semibold">€{item.subtotal.toFixed(2)}</p>
+                      <p className="text-white font-semibold">€{Number(item.subtotal).toFixed(2)}</p>
                     </div>
                   ))}
                 </div>
@@ -295,16 +295,16 @@ export default function OrdersPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal:</span>
-                    <span className="text-white">€{selectedOrder.subtotal.toFixed(2)}</span>
+                    <span className="text-white">€{Number(selectedOrder.subtotal).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Envío:</span>
-                    <span className="text-white">€{selectedOrder.shipping_cost.toFixed(2)}</span>
+                    <span className="text-white">€{Number(selectedOrder.shipping_cost).toFixed(2)}</span>
                   </div>
                   <Separator className="bg-red-900/20" />
                   <div className="flex justify-between text-lg font-semibold">
                     <span className="text-white">Total:</span>
-                    <span className="text-primary">€{selectedOrder.total.toFixed(2)}</span>
+                    <span className="text-primary">€{Number(selectedOrder.total).toFixed(2)}</span>
                   </div>
                 </div>
               </div>

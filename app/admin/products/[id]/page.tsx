@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useAdmin } from "@/lib/admin-context"
 import { Button } from "@/components/ui/button"
@@ -12,18 +12,22 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import { ArrowLeft, Save, Loader2, Upload, X, ImageIcon } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import type { Product, Category } from "@/lib/types"
 
 export default function ProductForm() {
   const { id } = useParams()
-  const isNewProduct = !id || id === "new"
+  const isNewProduct = id === "new"
   const { isAuthenticated, token } = useAdmin()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [formData, setFormData] = useState<Partial<Product>>({
     name: "",
     description: "",
@@ -57,8 +61,6 @@ export default function ProductForm() {
     }
 
     const fetchProduct = async () => {
-      console.log("Fetching product with ID:", id);
-      console.log("Is new product:", isNewProduct);
       if (isNewProduct) {
         setLoading(false)
         return
@@ -74,8 +76,10 @@ export default function ProductForm() {
         if (response.ok) {
           const data = await response.json()
           setFormData(data)
+          if (data.image_url && !data.image_url.includes("placeholder")) {
+            setImagePreview(data.image_url)
+          }
         } else {
-          console.log("Error al cargar el producto");
           alert("Producto no encontrado")
           router.push("/admin/products")
         }
@@ -110,6 +114,78 @@ export default function ProductForm() {
       ...formData,
       category_id: Number.parseInt(value),
     })
+  }
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith("image/")) {
+      alert("Por favor, selecciona un archivo de imagen válido")
+      return
+    }
+
+    // Validar tamaño (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("La imagen es demasiado grande. El tamaño máximo es 5MB")
+      return
+    }
+
+    // Mostrar vista previa
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      setImagePreview(event.target?.result as string)
+    }
+    reader.readAsDataURL(file)
+
+    // Subir imagen
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("image", file)
+
+      const response = await fetch("/api/admin/upload", {
+        method: "POST",
+        headers: {
+          "x-auth-token": token || "",
+        },
+        body: formData,
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setFormData((prev) => ({
+          ...prev,
+          image_url: data.imageUrl,
+        }))
+      } else {
+        const error = await response.json()
+        alert(`Error al subir la imagen: ${error.error}`)
+        setImagePreview(null)
+      }
+    } catch (error) {
+      console.error("Error al subir la imagen:", error)
+      alert("Error al subir la imagen")
+      setImagePreview(null)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setImagePreview(null)
+    setFormData({
+      ...formData,
+      image_url: "/placeholder.svg?height=300&width=300",
+    })
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -262,25 +338,69 @@ export default function ProductForm() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="image_url" className="text-white">
-                  URL de Imagen
+              <div className="flex items-center space-x-2 mt-8">
+                <Switch id="is_active" checked={formData.is_active} onCheckedChange={handleSwitchChange} />
+                <Label htmlFor="is_active" className="text-white">
+                  Producto activo
                 </Label>
-                <Input
-                  id="image_url"
-                  name="image_url"
-                  value={formData.image_url}
-                  onChange={handleInputChange}
-                  className="bg-secondary border-red-900/20 text-white"
-                />
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch id="is_active" checked={formData.is_active} onCheckedChange={handleSwitchChange} />
-              <Label htmlFor="is_active" className="text-white">
-                Producto activo
-              </Label>
+            {/* Sección de imagen */}
+            <div className="space-y-4">
+              <Label className="text-white">Imagen del Producto</Label>
+              <div className="flex flex-col items-center">
+                <div className="relative w-48 h-48 mb-4 border border-red-900/20 rounded-md overflow-hidden">
+                  {uploading ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : null}
+                  {imagePreview || formData.image_url ? (
+                    <Image
+                      src={imagePreview || formData.image_url || "/placeholder.svg?height=300&width=300"}
+                      alt="Vista previa"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-secondary">
+                      <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  )}
+                  {(imagePreview || (formData.image_url && !formData.image_url.includes("placeholder"))) && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6"
+                      onClick={handleRemoveImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleImageClick}
+                  disabled={uploading}
+                  className="border-red-900/20"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {imagePreview ? "Cambiar imagen" : "Subir imagen"}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB
+                </p>
+              </div>
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
@@ -289,7 +409,7 @@ export default function ProductForm() {
                 Cancelar
               </Button>
             </Link>
-            <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={saving}>
+            <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={saving || uploading}>
               {saving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
