@@ -3,18 +3,11 @@
 import type React from "react"
 import { createContext, useContext, useReducer, type ReactNode } from "react"
 
-export interface Product {
-  id: string
-  name: string
-  price: number
-  image: string
-  description: string
-  category: string
-}
+// Actualizar las interfaces para usar los tipos de la base de datos
+import type { Product, CartItem } from "./types"
 
-export interface CartItem extends Product {
-  quantity: number
-}
+// Cambiar la interfaz Product por la importada
+// Cambiar CartItem para que extienda de la interfacez de types.ts
 
 interface CartState {
   items: CartItem[]

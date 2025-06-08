@@ -1,89 +1,58 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ProductCard } from "@/components/product-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search } from "lucide-react"
-import type { Product } from "@/lib/cart-context"
-
-// Datos de ejemplo de productos
-const products: Product[] = [
-  {
-    id: "1",
-    name: "Vape Elite Pro",
-    price: 89.99,
-    image: "/placeholder.svg?height=300&width=300",
-    description: "Vaper premium con batería de larga duración y control de temperatura avanzado",
-    category: "Premium",
-  },
-  {
-    id: "2",
-    name: "Cloud Master X",
-    price: 65.5,
-    image: "/placeholder.svg?height=300&width=300",
-    description: "Perfecto para grandes nubes de vapor con sistema de airflow ajustable",
-    category: "Avanzado",
-  },
-  {
-    id: "3",
-    name: "Stealth Vape Mini",
-    price: 45.0,
-    image: "/placeholder.svg?height=300&width=300",
-    description: "Compacto y discreto, ideal para principiantes y uso diario",
-    category: "Básico",
-  },
-  {
-    id: "4",
-    name: "Dragon Fire RDA",
-    price: 120.0,
-    image: "/placeholder.svg?height=300&width=300",
-    description: "RDA profesional para expertos en vapeo con deck de construcción dual",
-    category: "Profesional",
-  },
-  {
-    id: "5",
-    name: "Mystic Pod System",
-    price: 35.99,
-    image: "/placeholder.svg?height=300&width=300",
-    description: "Sistema de pods recargables con sabores intensos y duraderos",
-    category: "Pod",
-  },
-  {
-    id: "6",
-    name: "Thunder Mod 200W",
-    price: 95.0,
-    image: "/placeholder.svg?height=300&width=300",
-    description: "Mod de alta potencia con pantalla OLED y múltiples modos de vapeo",
-    category: "Mod",
-  },
-]
+import { Search, Loader2 } from "lucide-react"
+import type { Product, Category } from "@/lib/types"
 
 export default function CatalogPage() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [sortBy, setSortBy] = useState("name")
 
-  const categories = ["all", ...Array.from(new Set(products.map((p) => p.category)))]
+  useEffect(() => {
+    fetchCategories()
+  }, [])
 
-  const filteredProducts = products
-    .filter(
-      (product) =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (selectedCategory === "all" || product.category === selectedCategory),
-    )
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "price-low":
-          return a.price - b.price
-        case "price-high":
-          return b.price - a.price
-        case "name":
-        default:
-          return a.name.localeCompare(b.name)
-      }
-    })
+  useEffect(() => {
+    fetchProducts()
+  }, [searchTerm, selectedCategory, sortBy])
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/categories")
+      const data = await response.json()
+      setCategories(data)
+    } catch (error) {
+      console.error("Error fetching categories:", error)
+    }
+  }
+
+  const fetchProducts = async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (searchTerm) params.append("search", searchTerm)
+      if (selectedCategory !== "all") params.append("category", selectedCategory)
+      if (sortBy) params.append("sortBy", sortBy)
+
+      const response = await fetch(`/api/products?${params}`)
+      const data = await response.json()
+      setProducts(data)
+
+      console.log("Fetched products:", data);
+    } catch (error) {
+      console.error("Error fetching products:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -112,9 +81,10 @@ export default function CatalogPage() {
             <SelectValue placeholder="Categoría" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">Todas las categorías</SelectItem>
             {categories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category === "all" ? "Todas las categorías" : category}
+              <SelectItem key={category.id} value={category.name}>
+                {category.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -131,14 +101,34 @@ export default function CatalogPage() {
         </Select>
       </div>
 
-      {/* Grid de productos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      {/* Loading */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-white">Cargando productos...</span>
+        </div>
+      )}
 
-      {filteredProducts.length === 0 && (
+      {/* Grid de productos */}
+      {!loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={{
+                id: product.id.toString(),
+                name: product.name,
+                price: product.price,
+                image: product.image_url,
+                description: product.description,
+                category: product.category_name || "Sin categoría",
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {!loading && products.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground text-lg">No se encontraron productos que coincidan con tu búsqueda.</p>
           <Button

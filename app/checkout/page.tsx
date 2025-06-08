@@ -42,17 +42,46 @@ export default function CheckoutPage() {
     e.preventDefault()
     setIsProcessing(true)
 
-    // Simular procesamiento de pago
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customerInfo: {
+            email: formData.email,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            address: formData.address,
+            city: formData.city,
+            postalCode: formData.postalCode,
+          },
+          items: state.items,
+          subtotal: state.total,
+          shippingCost: 4.99,
+          total: state.total + 4.99,
+        }),
+      })
 
-    setIsProcessing(false)
-    setOrderComplete(true)
+      const result = await response.json()
 
-    // Limpiar carrito después de 2 segundos
-    setTimeout(() => {
-      dispatch({ type: "CLEAR_CART" })
-      router.push("/")
-    }, 2000)
+      if (result.success) {
+        setOrderComplete(true)
+        // Limpiar carrito después de 2 segundos
+        setTimeout(() => {
+          dispatch({ type: "CLEAR_CART" })
+          router.push("/")
+        }, 3000)
+      } else {
+        throw new Error(result.error || "Error al procesar el pedido")
+      }
+    } catch (error) {
+      console.error("Error processing order:", error)
+      alert("Error al procesar el pedido. Por favor, inténtalo de nuevo.")
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   if (state.items.length === 0 && !orderComplete) {

@@ -55,5 +55,17 @@
   }
   body {
     @apply bg-black text-white font-sans;
+    /* Asegurar codificación correcta de fuentes */
+    font-feature-settings: "kern" 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Asegurar que los caracteres especiales se muestren correctamente */
+  input,
+  textarea,
+  select {
+    font-family: inherit;
   }
 }
