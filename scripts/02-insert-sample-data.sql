@@ -1,10 +1,10 @@
 USE vapestore;
 
--- Configurar codificación antes de insertar datos
+-- Configurar codificación
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 
--- Insertar categorías con caracteres especiales correctos
+-- Insertar categorías
 INSERT INTO categories (name, description) VALUES
 ('Premium', 'Productos de alta gama con las mejores características'),
 ('Avanzado', 'Para usuarios con experiencia en vapeo'),

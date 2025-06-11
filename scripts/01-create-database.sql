@@ -1,11 +1,11 @@
--- Crear la base de datos con codificación UTF-8 correcta
+-- Crear la base de datos con codificación UTF-8
 CREATE DATABASE IF NOT EXISTS vapestore 
 CHARACTER SET utf8mb4 
 COLLATE utf8mb4_unicode_ci;
 
 USE vapestore;
 
--- Asegurar que todas las tablas usen UTF-8
+-- Configurar codificación para la sesión actual
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 SET character_set_connection=utf8mb4;
@@ -51,7 +51,9 @@ CREATE TABLE IF NOT EXISTS orders (
     shipping_cost DECIMAL(10, 2) DEFAULT 4.99,
     total DECIMAL(10, 2) NOT NULL,
     status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
-    payment_status ENUM('pending', 'paid','confirmed','failed', 'refunded') DEFAULT 'pending',
+    payment_status ENUM('pending', 'paid', 'confirmed', 'failed', 'refunded') DEFAULT 'pending',
+    stripe_session_id VARCHAR(255),
+    payment_intent_id VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_order_number (order_number),
