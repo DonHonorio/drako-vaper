@@ -9,14 +9,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { CreditCard, Lock, CheckCircle } from "lucide-react"
+import { CreditCard, Lock, Loader2, ShoppingBag } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { getStripe } from "@/lib/stripe"
+import { useToast } from "@/hooks/use-toast"
 
 export default function CheckoutPage() {
   const { state, dispatch } = useCart()
   const router = useRouter()
+  const { toast } = useToast()
   const [isProcessing, setIsProcessing] = useState(false)
-  const [orderComplete, setOrderComplete] = useState(false)
 
   const [formData, setFormData] = useState({
     email: "",
@@ -25,10 +27,6 @@ export default function CheckoutPage() {
     address: "",
     city: "",
     postalCode: "",
-    cardNumber: "",
-    expiryDate: "",
-    cvv: "",
-    cardName: "",
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,35 +40,65 @@ export default function CheckoutPage() {
     e.preventDefault()
     setIsProcessing(true)
 
-    // Simular procesamiento de pago
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    try {
+      // Validar formulario
+      if (
+        !formData.email ||
+        !formData.firstName ||
+        !formData.lastName ||
+        !formData.address ||
+        !formData.city ||
+        !formData.postalCode
+      ) {
+        toast({
+          title: "Error",
+          description: "Por favor, completa todos los campos del formulario",
+          variant: "destructive",
+        })
+        setIsProcessing(false)
+        return
+      }
 
-    setIsProcessing(false)
-    setOrderComplete(true)
+      // Crear sesión de checkout con Stripe
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items: state.items,
+          customerInfo: formData,
+        }),
+      })
 
-    // Limpiar carrito después de 2 segundos
-    setTimeout(() => {
-      dispatch({ type: "CLEAR_CART" })
-      router.push("/")
-    }, 2000)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al procesar el pago")
+      }
+
+      // Redirigir a la página de pago de Stripe
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        const stripe = await getStripe()
+        await stripe.redirectToCheckout({ sessionId: data.sessionId })
+      }
+    } catch (error: any) {
+      console.error("Error al procesar el pago:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Ha ocurrido un error al procesar el pago",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
-  if (state.items.length === 0 && !orderComplete) {
+  if (state.items.length === 0) {
     router.push("/cart")
     return null
-  }
-
-  if (orderComplete) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <CheckCircle className="h-24 w-24 text-green-500 mx-auto mb-6" />
-        <h1 className="text-3xl font-bold mb-4 text-white">¡Pedido Completado!</h1>
-        <p className="text-muted-foreground mb-8">
-          Gracias por tu compra. Recibirás un email de confirmación en breve.
-        </p>
-        <p className="text-sm text-muted-foreground">Redirigiendo a la página principal...</p>
-      </div>
-    )
   }
 
   const total = state.total + 4.99
@@ -183,74 +211,20 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
 
-            {/* Información de pago */}
-            <Card className="bg-card border-red-900/20">
-              <CardHeader>
-                <CardTitle className="flex items-center text-white">
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Información de Pago
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="cardName" className="text-white">
-                    Nombre en la Tarjeta
-                  </Label>
-                  <Input
-                    id="cardName"
-                    name="cardName"
-                    required
-                    value={formData.cardName}
-                    onChange={handleInputChange}
-                    className="bg-secondary border-red-900/20 text-white"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cardNumber" className="text-white">
-                    Número de Tarjeta
-                  </Label>
-                  <Input
-                    id="cardNumber"
-                    name="cardNumber"
-                    placeholder="1234 5678 9012 3456"
-                    required
-                    value={formData.cardNumber}
-                    onChange={handleInputChange}
-                    className="bg-secondary border-red-900/20 text-white"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="expiryDate" className="text-white">
-                      Fecha de Vencimiento
-                    </Label>
-                    <Input
-                      id="expiryDate"
-                      name="expiryDate"
-                      placeholder="MM/AA"
-                      required
-                      value={formData.expiryDate}
-                      onChange={handleInputChange}
-                      className="bg-secondary border-red-900/20 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cvv" className="text-white">
-                      CVV
-                    </Label>
-                    <Input
-                      id="cvv"
-                      name="cvv"
-                      placeholder="123"
-                      required
-                      value={formData.cvv}
-                      onChange={handleInputChange}
-                      className="bg-secondary border-red-900/20 text-white"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="bg-card border border-red-900/20 rounded-lg p-4 text-white">
+              <div className="flex items-center mb-4">
+                <CreditCard className="h-5 w-5 mr-2 text-primary" />
+                <h3 className="font-medium">Información de Pago</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                El pago se procesará de forma segura a través de Stripe. Serás redirigido a la pasarela de pago después
+                de confirmar tu pedido.
+              </p>
+              <div className="flex items-center text-xs text-muted-foreground">
+                <Lock className="h-3 w-3 mr-1" />
+                Conexión segura con cifrado SSL
+              </div>
+            </div>
 
             <Button
               type="submit"
@@ -259,13 +233,13 @@ export default function CheckoutPage() {
             >
               {isProcessing ? (
                 <>
-                  <Lock className="h-5 w-5 mr-2 animate-spin" />
-                  Procesando Pago...
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  Procesando...
                 </>
               ) : (
                 <>
-                  <Lock className="h-5 w-5 mr-2" />
-                  Pagar €{total.toFixed(2)}
+                  <ShoppingBag className="h-5 w-5 mr-2" />
+                  Continuar al Pago (€{total.toFixed(2)})
                 </>
               )}
             </Button>

@@ -35,6 +35,18 @@ export async function executeQuery(query: string, params: any[] = []) {
   }
 }
 
+
+// Función helper para obtener una sola fila
+export async function executeQuerySingle(query: string, params: any[] = []) {
+  try {
+    const [results] = await pool.execute(query, params)
+    return Array.isArray(results) && results.length > 0 ? results[0] : null
+  } catch (error) {
+    console.error("Database query error:", error)
+    throw error
+  }
+}
+
 export async function getConnection() {
   return await pool.getConnection()
 }

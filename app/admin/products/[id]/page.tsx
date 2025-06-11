@@ -19,7 +19,7 @@ import type { Product, Category } from "@/lib/types"
 
 export default function ProductForm() {
   const { id } = useParams()
-  const isNewProduct = id === "new"
+  const isNewProduct = !id ? "new" : id
   const { isAuthenticated, token } = useAdmin()
   const router = useRouter()
   const [loading, setLoading] = useState(true)

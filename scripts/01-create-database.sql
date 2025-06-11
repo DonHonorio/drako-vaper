@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS orders (
     shipping_cost DECIMAL(10, 2) DEFAULT 4.99,
     total DECIMAL(10, 2) NOT NULL,
     status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
-    payment_status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
+    payment_status ENUM('pending', 'paid','confirmed','failed', 'refunded') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_order_number (order_number),
